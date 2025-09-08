@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compliment App</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            transition: all 0.3s ease-in-out;
+        }
+        .container {
+            max-width: 600px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease-in-out;
+        }
+        .compliment-card {
+            background-color: #f7f3e8;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            font-style: italic;
+            transition: all 0.2s ease-in-out;
+            border-left: 4px solid #f9d949;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .message-box {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 15px 25px;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+            z-index: 1000;
+        }
+        .message-box.show {
+            opacity: 1;
+        }
+        .message-box.success {
+            background-color: #10b981;
+        }
+        .message-box.error {
+            background-color: #ef4444;
+        }
+        .btn-primary {
+            background-color: #4f46e5;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: background-color 0.2s, transform 0.2s;
+        }
+        .btn-primary:hover {
+            background-color: #4338ca;
+            transform: translateY(-2px);
+        }
+        .btn-reply {
+            background-color: #e2e8f0;
+            color: #475569;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            align-self: flex-end;
+            transition: background-color 0.2s;
+        }
+        .btn-reply:hover {
+            background-color: #cbd5e1;
+        }
+        .group-item-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        /* Modal and Overlay styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+        .modal-overlay.open {
+            display: flex;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            width: 90%;
+            max-width: 400px;
+            position: relative;
+        }
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #9ca3af;
+            cursor: pointer;
+        }
+        .copy-link-btn {
+            background-color: #10b981;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: background-color 0.2s, transform 0.2s;
+        }
+        .copy-link-btn:hover {
+            background-color: #059669;
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+
+    <div class="container" id="app">
+        <!-- Login/Register View -->
+        <div id="auth-view" class="p-6 bg-white rounded-xl shadow-lg transition-all duration-300">
+            <h2 class="text-3xl font-bold text-center mb-6 text-gray-800">Welcome</h2>
+            <div id="login-form-container">
+                <h3 class="text-2xl font-semibold text-center mb-4">Log In</h3>
+                <form id="login-form" class="space-y-4">
+                    <input type="email" id="login-email" placeholder="Email" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200" required>
+                    <input type="password" id="login-password" placeholder="Password" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200" required>
+                    <button type="submit" class="w-full btn-primary">Log In</button>
+                </form>
+                <p class="text-center mt-4 text-sm text-gray-600">
+                    Don't have an account? <a href="#" id="switch-to-register" class="text-indigo-600 font-medium hover:underline">Register now</a>
+                </p>
+            </div>
+            <div id="register-form-container" class="hidden">
+                <h3 class="text-2xl font-semibold text-center mb-4">Register</h3>
+                <form id="register-form" class="space-y-4">
+                    <input type="email" id="register-email" placeholder="Email" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200" required>
+                    <input type="password" id="register-password" placeholder="Password" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200" required>
+                    <button type="submit" class="w-full btn-primary">Register</button>
+                </form>
+                <p class="text-center mt-4 text-sm text-gray-600">
+                    Already have an account? <a href="#" id="switch-to-login" class="text-indigo-600 font-medium hover:underline">Log in</a>
+                </p>
+            </div>
+        </div>
+
+        <!-- Dashboard View -->
+        <div id="dashboard-view" class="hidden p-6 bg-white rounded-xl shadow-lg transition-all duration-300">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-3xl font-bold text-gray-800">Your Groups</h2>
+                <button id="logout-btn" class="text-sm text-gray-500 font-semibold hover:text-red-500 transition-colors duration-200">Log Out</button>
+            </div>
+            <p class="text-center text-sm mb-4 text-gray-500" id="user-id-display"></p>
+
+            <h3 class="text-xl font-semibold mb-3 text-gray-700">Create a New Group</h3>
+            <form id="create-group-form" class="flex gap-2 mb-6">
+                <input type="text" id="group-name-input" placeholder="Enter group name" class="flex-grow px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200" required>
+                <button type="submit" class="btn-primary">Create</button>
+            </form>
+
+            <h3 class="text-xl font-semibold mb-3 text-gray-700">Join a Group</h3>
+            <form id="join-group-form" class="flex gap-2 mb-6">
+                <input type="text" id="group-id-input" placeholder="Enter group ID to join" class="flex-grow px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200" required>
+                <button type="submit" class="btn-primary">Join</button>
+            </form>
+
+            <h3 class="text-xl font-semibold mb-3 text-gray-700">Your Groups:</h3>
+            <ul id="groups-list" class="space-y-3">
+                <!-- Groups will be dynamically added here -->
+            </ul>
+        </div>
+
+        <!-- Group View -->
+        <div id="group-view" class="hidden p-6 bg-white rounded-xl shadow-lg transition-all duration-300">
+            <div class="flex justify-between items-center mb-6">
+                <h2 id="group-title" class="text-3xl font-bold text-gray-800 truncate"></h2>
+                <button id="back-to-dashboard-btn" class="btn-primary">Back</button>
+            </div>
+            
+            <h3 class="text-xl font-semibold mb-3 text-gray-700">Send an Anonymous Compliment</h3>
+            <form id="send-compliment-form" class="space-y-4 mb-6">
+                <textarea id="compliment-message-input" rows="4" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200" placeholder="Type your compliment here..." required></textarea>
+                <button type="submit" class="btn-primary w-full">Send Compliment</button>
+            </form>
+
+            <h3 class="text-xl font-semibold mb-3 text-gray-700">Compliments:</h3>
+            <div id="compliments-list" class="space-y-4">
+                <!-- Compliments will be dynamically added here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Share Modal -->
+    <div id="share-modal" class="modal-overlay">
+        <div class="modal-content">
+            <span class="close-btn" id="close-share-modal-btn">&times;</span>
+            <h4 class="text-xl font-bold mb-4 text-gray-800">Share Group ID</h4>
+            <p class="text-gray-600 mb-4">Send this ID to your friend so they can join this group. They will need to paste it in the "Join a Group" field.</p>
+            <div class="flex items-center gap-2 mb-4">
+                <input type="text" id="share-id-input" class="flex-grow px-4 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-text" readonly>
+                <button class="copy-link-btn" id="copy-share-id-btn">Copy</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal (now handles both delete and leave) -->
+    <div id="confirm-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h4 id="confirm-modal-title" class="text-xl font-bold mb-4 text-gray-800"></h4>
+            <p id="confirm-modal-message" class="text-gray-600 mb-4"></p>
+            <div class="flex justify-end gap-2">
+                <button id="cancel-confirm-btn" class="btn-reply">Cancel</button>
+                <button id="confirm-action-btn" class="btn-primary bg-red-500 hover:bg-red-600">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Message Box -->
+    <div id="message-box" class="message-box"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, signInWithCustomToken, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, getDoc, updateDoc, query, where, arrayUnion, deleteDoc, writeBatch, getDocs, arrayRemove } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+        import { setLogLevel } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+            
+        // Log level for debugging Firestore issues
+        setLogLevel('debug');
+
+        // This is the Firebase configuration using the values you provided.
+        const firebaseConfig = {
+            apiKey: "AIzaSyCsFYk8i-MK0HglsCJD-ZRd52_ALscgc4Q",
+            authDomain: "complimentapp-1922e.firebaseapp.com",
+            projectId: "complimentapp-1922e",
+            storageBucket: "complimentapp-1922e.firebasestorage.app",
+            messagingSenderId: "467180902967",
+            appId: "1:467180902967:web:64075da47ae86d11da3db2",
+            measurementId: "G-8QMS1VRX1H"
+        };
+        
+        // Log the config to the console for debugging
+        console.log("App's Firebase Config:", firebaseConfig);
+        
+        // Global variables for Firebase services and app state
+        let app, auth, db;
+        let userId = null;
+        let currentGroupId = null;
+        let unsubscribeGroups = null;
+        let unsubscribeCompliments = null;
+        let pendingAction = {}; // Stores info for the pending action (delete or leave)
+
+        // UI elements
+        const authView = document.getElementById('auth-view');
+        const dashboardView = document.getElementById('dashboard-view');
+        const groupView = document.getElementById('group-view');
+        const loginForm = document.getElementById('login-form');
+        const registerForm = document.getElementById('register-form');
+        const loginFormContainer = document.getElementById('login-form-container');
+        const registerFormContainer = document.getElementById('register-form-container');
+        const switchToRegisterBtn = document.getElementById('switch-to-register');
+        const switchToLoginBtn = document.getElementById('switch-to-login');
+        const logoutBtn = document.getElementById('logout-btn');
+        const createGroupForm = document.getElementById('create-group-form');
+        const joinGroupForm = document.getElementById('join-group-form');
+        const groupsList = document.getElementById('groups-list');
+        const backToDashboardBtn = document.getElementById('back-to-dashboard-btn');
+        const sendComplimentForm = document.getElementById('send-compliment-form');
+        const complimentsList = document.getElementById('compliments-list');
+        const groupTitle = document.getElementById('group-title');
+        const userIdDisplay = document.getElementById('user-id-display');
+        const complimentMessageInput = document.getElementById('compliment-message-input');
+        const messageBox = document.getElementById('message-box');
+
+        // Share Modal elements
+        const shareModal = document.getElementById('share-modal');
+        const closeShareModalBtn = document.getElementById('close-share-modal-btn');
+        const shareIdInput = document.getElementById('share-id-input');
+        const copyShareIdBtn = document.getElementById('copy-share-id-btn');
+
+        // Confirmation Modal elements
+        const confirmModal = document.getElementById('confirm-modal');
+        const confirmModalTitle = document.getElementById('confirm-modal-title');
+        const confirmModalMessage = document.getElementById('confirm-modal-message');
+        const confirmActionBtn = document.getElementById('confirm-action-btn');
+        const cancelConfirmBtn = document.getElementById('cancel-confirm-btn');
+        
+        // Function to show a temporary message box
+        function showMessage(message, type) {
+            messageBox.textContent = message;
+            messageBox.className = `message-box show ${type}`;
+            setTimeout(() => {
+                messageBox.className = 'message-box';
+            }, 3000);
+        }
+        
+        // Display different views based on user state
+        function showView(view) {
+            authView.classList.add('hidden');
+            dashboardView.classList.add('hidden');
+            groupView.classList.add('hidden');
+            if (view === 'auth') {
+                authView.classList.remove('hidden');
+            } else if (view === 'dashboard') {
+                dashboardView.classList.remove('hidden');
+            } else if (view === 'group') {
+                groupView.classList.remove('hidden');
+            }
+        }
+
+        // Initialize Firebase and set up auth listener
+        async function initializeAppAndAuth() {
+            try {
+                app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+            } catch (error) {
+                console.error("Error initializing Firebase:", error);
+                showMessage('Error initializing app.', 'error');
+                return;
+            }
+
+            // Immediately set the view to the login screen, overriding any previous session logic.
+            showView('auth');
+            
+            // This listener will handle the view change *after* the initial page load.
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    userId = user.uid;
+                    userIdDisplay.textContent = `Your User ID: ${userId}`;
+                    showView('dashboard');
+                    setupDashboardListeners();
+                } else {
+                    userId = null;
+                    showView('auth');
+                    if (unsubscribeGroups) {
+                        unsubscribeGroups();
+                        unsubscribeGroups = null;
+                    }
+                    if (unsubscribeCompliments) {
+                        unsubscribeCompliments();
+                        unsubscribeCompliments = null;
+                    }
+                }
+            });
+        }
+
+        // --- Authentication Logic ---
+
+        // Switch between login and register forms
+        switchToRegisterBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            loginFormContainer.classList.add('hidden');
+            registerFormContainer.classList.remove('hidden');
+        });
+
+        switchToLoginBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            registerFormContainer.classList.add('hidden');
+            loginFormContainer.classList.remove('hidden');
+        });
+
+        // Handle user registration
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('register-email').value;
+            const password = document.getElementById('register-password').value;
+            try {
+                await createUserWithEmailAndPassword(auth, email, password);
+                showMessage('Registration successful! You are now logged in.', 'success');
+            } catch (error) {
+                console.error(error);
+                let message = error.message;
+                if (error.code === 'auth/operation-not-allowed') {
+                    message = 'Registration failed. The "Email/Password" sign-in method is not enabled in your Firebase project. Please enable it in the Authentication section of your Firebase console.';
+                }
+                showMessage(message, 'error');
+            }
+        });
+
+        // Handle user login
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                showMessage('Login successful!', 'success');
+            } catch (error) {
+                console.error(error);
+                let message = error.message;
+                if (error.code === 'auth/operation-not-allowed') {
+                    message = 'Login failed. The "Email/Password" sign-in method is not enabled in your Firebase project. Please enable it in the Authentication section of your Firebase console.';
+                }
+                showMessage(message, 'error');
+            }
+        });
+
+        // Handle logout
+        logoutBtn.addEventListener('click', async () => {
+            try {
+                await signOut(auth);
+                showMessage('Logged out successfully.', 'success');
+            } catch (error) {
+                console.error(error);
+                showMessage(`Logout failed: ${error.message}`, 'error');
+            }
+        });
+
+        // --- Dashboard Logic ---
+        function setupDashboardListeners() {
+            // Unsubscribe from previous listener if it exists
+            if (unsubscribeGroups) {
+                unsubscribeGroups();
+            }
+            if (!userId) {
+                return;
+            }
+            console.log("Setting up dashboard listeners for user:", userId);
+            // Real-time listener for user's groups
+            const groupsRef = collection(db, `artifacts/${firebaseConfig.projectId}/public/data/groups`);
+            const q = query(groupsRef, where('members', 'array-contains', userId));
+            unsubscribeGroups = onSnapshot(q, (snapshot) => {
+                groupsList.innerHTML = '';
+                if (snapshot.empty) {
+                    const li = document.createElement('li');
+                    li.className = 'text-gray-500 italic';
+                    li.textContent = 'You have not joined any groups yet.';
+                    groupsList.appendChild(li);
+                } else {
+                    snapshot.forEach(doc => {
+                        const group = doc.data();
+                        const isOwner = group.owner === userId;
+                        const li = document.createElement('li');
+                        li.className = 'bg-gray-50 p-4 rounded-lg flex justify-between items-center hover:bg-gray-100 transition-colors duration-200';
+                        
+                        let buttonsHtml = `<button class="btn-primary text-sm share-btn" data-id="${doc.id}">Copy Link</button>`;
+
+                        if (isOwner) {
+                            buttonsHtml += `<button class="btn-primary text-sm bg-red-500 hover:bg-red-600 delete-group-btn" data-id="${doc.id}">Delete</button>`;
+                        } else {
+                            buttonsHtml += `<button class="btn-primary text-sm bg-red-500 hover:bg-red-600 leave-group-btn" data-id="${doc.id}">Leave</button>`;
+                        }
+
+                        li.innerHTML = `
+                            <div class="flex-grow cursor-pointer group-view-link" data-id="${doc.id}" data-name="${group.name}">
+                                <span class="font-semibold">${group.name}</span>
+                                <p class="text-xs text-gray-500 mt-1">ID: ${doc.id}</p>
+                            </div>
+                            <div class="group-item-actions">
+                                ${buttonsHtml}
+                            </div>
+                        `;
+
+                        // Attach event listeners for the new buttons
+                        li.querySelector('.group-view-link').addEventListener('click', () => {
+                             showGroupView(doc.id, group.name);
+                        });
+                        li.querySelector('.share-btn').addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            showShareModal(doc.id);
+                        });
+                        if (isOwner) {
+                            li.querySelector('.delete-group-btn').addEventListener('click', (e) => {
+                                e.stopPropagation();
+                                showConfirmModal('delete', doc.id);
+                            });
+                        } else {
+                            li.querySelector('.leave-group-btn').addEventListener('click', (e) => {
+                                e.stopPropagation();
+                                showConfirmModal('leave', doc.id);
+                            });
+                        }
+                        
+                        groupsList.appendChild(li);
+                    });
+                }
+            }, (error) => {
+                console.error("Error fetching groups:", error);
+                showMessage("Error loading groups.", "error");
+            });
+        }
+
+        // Handle group creation
+        createGroupForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const groupName = document.getElementById('group-name-input').value.trim();
+            if (!groupName) return;
+            try {
+                await addDoc(collection(db, `artifacts/${firebaseConfig.projectId}/public/data/groups`), {
+                    name: groupName,
+                    members: [userId],
+                    owner: userId
+                });
+                document.getElementById('group-name-input').value = '';
+                showMessage('Group created successfully!', 'success');
+            } catch (error) {
+                console.error(error);
+                showMessage(`Failed to create group: ${error.message}`, 'error');
+            }
+        });
+
+        // Handle joining a group
+        joinGroupForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const groupId = document.getElementById('group-id-input').value.trim();
+            if (!groupId) return;
+
+            try {
+                const groupRef = doc(db, `artifacts/${firebaseConfig.projectId}/public/data/groups`, groupId);
+                const groupSnap = await getDoc(groupRef);
+
+                if (!groupSnap.exists()) {
+                    showMessage('Group not found.', 'error');
+                    return;
+                }
+
+                const groupData = groupSnap.data();
+                if (groupData.members.includes(userId)) {
+                    showMessage('You are already a member of this group.', 'error');
+                    return;
+                }
+
+                await updateDoc(groupRef, {
+                    members: arrayUnion(userId)
+                });
+
+                document.getElementById('group-id-input').value = '';
+                showMessage('Successfully joined the group!', 'success');
+            } catch (error) {
+                console.error(error);
+                showMessage(`Failed to join group: ${error.message}`, 'error');
+            }
+        });
+
+        // --- Group View Logic ---
+        function showGroupView(groupId, groupName) {
+            currentGroupId = groupId;
+            groupTitle.textContent = groupName;
+            showView('group');
+            setupComplimentListeners(groupId);
+        }
+        
+        function setupComplimentListeners(groupId) {
+            // Unsubscribe from previous listener if it exists
+            if (unsubscribeCompliments) {
+                unsubscribeCompliments();
+            }
+            if (!groupId) return;
+            
+            const q = query(collection(db, `artifacts/${firebaseConfig.projectId}/public/data/compliments`), where('groupId', '==', groupId));
+            unsubscribeCompliments = onSnapshot(q, (snapshot) => {
+                complimentsList.innerHTML = '';
+                if (snapshot.empty) {
+                    const p = document.createElement('p');
+                    p.className = 'text-gray-500 italic text-center';
+                    p.textContent = 'No compliments yet. Be the first to send one!';
+                    complimentsList.appendChild(p);
+                } else {
+                    snapshot.forEach(doc => {
+                        const compliment = doc.data();
+                        const div = document.createElement('div');
+                        div.className = 'compliment-card';
+
+                        const messagePara = document.createElement('p');
+                        messagePara.className = 'text-gray-700';
+                        messagePara.textContent = compliment.message;
+                        div.appendChild(messagePara);
+
+                        const replyBtn = document.createElement('button');
+                        replyBtn.className = 'btn-reply';
+                        replyBtn.textContent = 'Reply';
+                        replyBtn.addEventListener('click', () => {
+                            complimentMessageInput.value = `"${compliment.message}"\n\n`;
+                            complimentMessageInput.focus();
+                        });
+                        div.appendChild(replyBtn);
+
+                        complimentsList.appendChild(div);
+                    });
+                }
+            }, (error) => {
+                console.error("Error fetching compliments:", error);
+                showMessage("Error loading compliments.", "error");
+            });
+        }
+
+        // Handle sending a compliment
+        sendComplimentForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const message = document.getElementById('compliment-message-input').value.trim();
+            if (!message || !currentGroupId) return;
+
+            try {
+                await addDoc(collection(db, `artifacts/${firebaseConfig.projectId}/public/data/compliments`), {
+                    groupId: currentGroupId,
+                    message: message,
+                    timestamp: new Date()
+                });
+                document.getElementById('compliment-message-input').value = '';
+                showMessage('Compliment sent successfully!', 'success');
+            } catch (error) {
+                console.error(error);
+                showMessage(`Failed to send compliment: ${error.message}`, 'error');
+            }
+        });
+
+        backToDashboardBtn.addEventListener('click', () => {
+            if (unsubscribeCompliments) {
+                unsubscribeCompliments();
+                unsubscribeCompliments = null;
+            }
+            showView('dashboard');
+        });
+        
+        // --- Modal Logic ---
+
+        // Share Modal
+        function showShareModal(groupId) {
+            shareIdInput.value = groupId;
+            shareModal.classList.add('open');
+        }
+
+        closeShareModalBtn.addEventListener('click', () => {
+            shareModal.classList.remove('open');
+        });
+
+        copyShareIdBtn.addEventListener('click', () => {
+            copyToClipboard(shareIdInput.value);
+            showMessage('Group ID copied!', 'success');
+        });
+
+        // Confirmation Modal (now generic)
+        function showConfirmModal(action, groupId) {
+            pendingAction.type = action;
+            pendingAction.groupId = groupId;
+            
+            if (action === 'delete') {
+                confirmModalTitle.textContent = 'Confirm Deletion';
+                confirmModalMessage.textContent = 'Are you sure you want to delete this group? This action is permanent and cannot be undone. All compliments will be lost.';
+                confirmActionBtn.textContent = 'Delete';
+            } else if (action === 'leave') {
+                confirmModalTitle.textContent = 'Confirm Leaving Group';
+                confirmModalMessage.textContent = 'Are you sure you want to leave this group? You can rejoin later if you have the group ID.';
+                confirmActionBtn.textContent = 'Leave';
+            }
+            confirmModal.classList.add('open');
+        }
+
+        cancelConfirmBtn.addEventListener('click', () => {
+            confirmModal.classList.remove('open');
+            pendingAction = {};
+        });
+
+        confirmActionBtn.addEventListener('click', async () => {
+            confirmModal.classList.remove('open');
+            const { type, groupId } = pendingAction;
+            
+            if (!groupId) return;
+
+            try {
+                if (type === 'delete') {
+                    const batch = writeBatch(db);
+                    
+                    // Query and delete all compliments associated with the group
+                    const complimentsRef = collection(db, `artifacts/${firebaseConfig.projectId}/public/data/compliments`);
+                    const q = query(complimentsRef, where('groupId', '==', groupId));
+                    const complimentSnapshot = await getDocs(q);
+                    
+                    complimentSnapshot.forEach((doc) => {
+                        batch.delete(doc.ref);
+                    });
+
+                    // Delete the group document itself
+                    const groupRef = doc(db, `artifacts/${firebaseConfig.projectId}/public/data/groups`, groupId);
+                    batch.delete(groupRef);
+
+                    await batch.commit();
+
+                    showMessage('Group and all compliments deleted.', 'success');
+                } else if (type === 'leave') {
+                    const groupRef = doc(db, `artifacts/${firebaseConfig.projectId}/public/data/groups`, groupId);
+                    await updateDoc(groupRef, {
+                        members: arrayRemove(userId)
+                    });
+                    showMessage('You have left the group.', 'success');
+                }
+            } catch (error) {
+                console.error("Error performing action:", error);
+                showMessage(`Failed to perform action: ${error.message}`, 'error');
+            }
+
+            pendingAction = {};
+        });
+        
+        // Function to copy text to clipboard
+        function copyToClipboard(text) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+        }
+
+        // Start the application
+        window.onload = initializeAppAndAuth;
+
+    </script>
+</body>
+</html>
